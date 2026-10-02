@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+   <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        darkbg: '#0f172a',
+                        cardbg: '#1e293b',
+                        accent: '#3b82f6',
+                        accenthover: '#2563eb'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-darkbg text-slate-100 min-h-screen flex flex-col justify-between selection:bg-accent selection:text-white">
+
+    <header class="w-full px-6 py-4 flex items-center justify-between border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-cloud-arrow-down text-white text-lg"></i>
+            </div>
+            <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">MediaGrab</span>
+        </div>
+        <div class="flex items-center space-x-3">
+            <span class="text-xs px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Online
+            </span>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col items-center justify-center px-4 py-12 max-w-4xl mx-auto w-full">
+        
+        <div class="text-center mb-8 space-y-2">
+            <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight text-white">
+                Download Media Instantly
+            </h1>
+            <p class="text-slate-400 text-sm md:text-base max-w-md mx-auto">
+                Paste any valid YouTube link below to analyze and extract files securely.
+            </p>
+        </div>
+
+        <!-- Center Search Bar Form with required placeholder -->
+        <div class="w-full relative mb-6">
+            <form id="searchForm" class="relative flex items-center shadow-2xl shadow-blue-900/10 rounded-2xl overflow-hidden border border-slate-700/80 bg-cardbg focus-within:border-accent transition-all duration-300">
+                <div class="pl-5 text-slate-400 text-lg">
+                    <i class="fa-brands fa-youtube text-red-500"></i>
+                </div>
+                <input 
+                    type="text" 
+                    id="urlInput"
+                    placeholder="only i know what to do" 
+                    class="w-full bg-transparent px-4 py-4 text-slate-100 placeholder-slate-500 focus:outline-none text-base md:text-lg"
+                    autocomplete="off"
+                >
+                <div class="pr-2">
+                    <button 
+                        type="submit" 
+                        class="bg-accent hover:bg-accenthover text-white px-6 py-3 rounded-xl font-medium text-sm md:text-base transition-all duration-200 flex items-center gap-2 shadow-lg shadow-accent/20 cursor-pointer active:scale-95">
+                        <span>Convert</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+            </form>
+            <div class="flex items-center justify-between mt-2 px-2 text-xs text-slate-500">
+                <span>Tip: Paste youtube.com or youtu.be links</span>
+                <span class="hover:text-slate-400 cursor-pointer text-blue-400 underline" id="sampleLinkBtn">Try sample link</span>
+            </div>
+        </div>
+
+        <div id="alertBox" class="w-full hidden mb-6 p-4 rounded-xl border animate-fade-in transition-all duration-300 flex items-start gap-3">
+            <div id="alertIcon" class="text-xl pt-0.5"></div>
+            <div class="flex-1">
+                <h4 id="alertTitle" class="font-semibold text-sm"></h4>
+                <p id="alertMessage" class="text-xs mt-0.5 opacity-90"></p>
+            </div>
+            <button onclick="hideAlert()" class="text-slate-400 hover:text-white cursor-pointer"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div id="loadingState" class="hidden flex-col items-center justify-center py-12 space-y-4 animate-fade-in">
+            <div class="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-slate-400 text-sm font-medium">Fetching video metadata & verifying copyright status...</p>
+        </div>
+
+        <div id="resultContainer" class="w-full hidden bg-cardbg border border-slate-800 rounded-2xl p-5 md:p-6 shadow-2xl animate-fade-in space-y-6">
+            
+            <div class="flex flex-col md:flex-row gap-5 items-start md:items-center border-b border-slate-800 pb-6">
+                <div class="relative w-full md:w-56 h-36 rounded-xl overflow-hidden bg-slate-800 flex-shrink-0 border border-slate-700/50">
+                    <img id="videoThumb" src="" alt="Thumbnail" class="w-full h-full object-cover">
+                    <div id="videoDuration" class="absolute bottom-2 right-2 bg-black/80 backdrop-blur-sm text-white text-xs px-2 py-0.5 rounded font-medium">HD</div>
+                </div>
+                <div class="flex-1 space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">Ready to Download</span>
+                        <span id="videoCategory" class="text-xs text-slate-400">YouTube Stream</span>
+                    </div>
+                    <h3 id="videoTitle" class="text-lg md:text-xl font-bold text-white leading-snug"></h3>
+                    <p id="videoChannel" class="text-sm text-slate-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-user text-slate-500"></i> <span id="channelName"></span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-semibold text-sm text-slate-300 uppercase tracking-wider">Select Output Format & Quality</h4>
+                    <div class="flex bg-slate-900 p-1 rounded-xl border border-slate-800">
+                        <button onclick="switchTab('mp4')" id="tabMp4" class="px-4 py-1.5 rounded-lg text-xs font-medium bg-accent text-white transition-all cursor-pointer">Video (MP4)</button>
+                        <button onclick="switchTab('mp3')" id="tabMp3" class="px-4 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all cursor-pointer">Audio (MP3)</button>
+                    </div>
+                </div>
+
+                <!-- MP4 Options -->
+                <div id="mp4Options" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                    <div onclick="selectQuality(this, '1080p', 'MP4', '145 MB')" class="quality-card border border-slate-700/80 bg-slate-900/60 p-3.5 rounded-xl cursor-pointer hover:border-accent transition-all duration-200 border-accent bg-accent/5">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-white text-sm">1080p HD</span>
+                            <span class="text-xs text-emerald-400 font-medium">Best</span>
+                        </div>
+                        <div class="text-xs text-slate-400 flex justify-between">
+                            <span>MP4 • H.264</span>
+                            <span>~145 MB</span>
+                        </div>
+                    </div>
+                    <div onclick="selectQuality(this, '720p', 'MP4', '82 MB')" class="quality-card border border-slate-700/80 bg-slate-900/60 p-3.5 rounded-xl cursor-pointer hover:border-accent transition-all duration-200">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-white text-sm">720p HD</span>
+                            <span class="text-xs text-slate-400 font-medium">Standard</span>
+                        </div>
+                        <div class="text-xs text-slate-400 flex justify-between">
+                            <span>MP4 • H.264</span>
+                            <span>~82 MB</span>
+                        </div>
+                    </div>
+                    <div onclick="selectQuality(this, '480p', 'MP4', '45 MB')" class="quality-card border border-slate-700/80 bg-slate-900/60 p-3.5 rounded-xl cursor-pointer hover:border-accent transition-all duration-200">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-white text-sm">480p SD</span>
+                            <span class="text-xs text-slate-400 font-medium">Compact</span>
+                        </div>
+                        <div class="text-xs text-slate-400 flex justify-between">
+                            <span>MP4 • H.264</span>
+                            <span>~45 MB</span>
+                        </div>
+                    </div>
+                    <div onclick="selectQuality(this, '360p', 'MP4', '24 MB')" class="quality-card border border-slate-700/80 bg-slate-900/60 p-3.5 rounded-xl cursor-pointer hover:border-accent transition-all duration-200">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-white text-sm">360p SD</span>
+                            <span class="text-xs text-slate-400 font-medium">Mobile</span>
+                        </div>
+                        <div class="text-xs text-slate-400 flex justify-between">
+                            <span>MP4 • H.264</span>
+                            <span>~24 MB</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MP3 Options -->
+                <div id="mp3Options" class="hidden grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div onclick="selectQuality(this, '320kbps', 'MP3', '12.4 MB')" class="quality-card border border-slate-700/80 bg-slate-900/60 p-3.5 rounded-xl cursor-pointer hover:border-accent transition-all duration-200">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-white text-sm">320 kbps</span>
+                            <span class="text-xs text-emerald-400 font-medium">Lossless Audio</span>
+                        </div>
+                        <div class="text-xs text-slate-400 flex justify-between">
+                            <span>MP3 • High Quality</span>
+                            <span>~12.4 MB</span>
+                        </div>
+                    </div>
+                    <div onclick="selectQuality(this, '192kbps', 'MP3', '7.8 MB')" class="quality-card border border-slate-700/80 bg-slate-900/60 p-3.5 rounded-xl cursor-pointer hover:border-accent transition-all duration-200">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-white text-sm">192 kbps</span>
+                            <span class="text-xs text-slate-400 font-medium">Standard</span>
+                        </div>
+                        <div class="text-xs text-slate-400 flex justify-between">
+                            <span>MP3 • Balanced</span>
+                            <span>~7.8 MB</span>
+                        </div>
+                    </div>
+                    <div onclick="selectQuality(this, '128kbps', 'MP3', '5.1 MB')" class="quality-card border border-slate-700/80 bg-slate-900/60 p-3.5 rounded-xl cursor-pointer hover:border-accent transition-all duration-200">
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="font-bold text-white text-sm">128 kbps</span>
+                            <span class="text-xs text-slate-400 font-medium">Economy</span>
+                        </div>
+                        <div class="text-xs text-slate-400 flex justify-between">
+                            <span>MP3 • Small Size</span>
+                            <span>~5.1 MB</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-800 space-y-4">
+                <div id="progressSection" class="hidden space-y-2">
+                    <div class="flex justify-between text-xs text-slate-400 font-medium">
+                        <span id="progressStatusText">Preparing download...</span>
+                        <span id="progressPercentage">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-800">
+                        <div id="progressBar" class="bg-accent h-full w-0 transition-all duration-200 rounded-full"></div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="text-xs text-slate-400 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+                        <span>Copyright protection filter active</span>
+                    </div>
+                    <button 
+                        id="startDownloadBtn"
+                        onclick="startDownload()"
+                        class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-medium px-8 py-3.5 rounded-xl shadow-lg shadow-blue-500/25 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer active:scale-95">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Download <span id="selectedQualityBadge">1080p MP4</span></span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="w-full py-6 text-center text-xs text-slate-500 border-t border-slate-800/60">
+        <p>MediaGrab Pro © 2026 • Strictly enforcing copyright restrictions.</p>
+    </footer>
+
+    <script>
+        let currentSelection = {
+            format: 'MP4',
+            quality: '1080p',
+            size: '145 MB'
+        };
+
+        const searchForm = document.getElementById('searchForm');
+        const urlInput = document.getElementById('urlInput');
+        const alertBox = document.getElementById('alertBox');
+        const alertIcon = document.getElementById('alertIcon');
+        const alertTitle = document.getElementById('alertTitle');
+        const alertMessage = document.getElementById('alertMessage');
+        const loadingState = document.getElementById('loadingState');
+        const resultContainer = document.getElementById('resultContainer');
+        const sampleLinkBtn = document.getElementById('sampleLinkBtn');
+
+        sampleLinkBtn.addEventListener('click', () => {
+            urlInput.value = "https://www.youtube.com/watch?v=aqz-KE-bpKQ";
+            searchForm.dispatchEvent(new Event('submit'));
+        });
+
+        // Regex parser for YouTube video IDs
+        function extractYouTubeId(url) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            return (match && match[2].length === 11) ? match[2] : null;
+        }
+
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = urlInput.value.trim();
+
+            if (!query) {
+                showAlert('error', 'Empty Input', 'Please paste a valid YouTube video link into the search bar.');
+                return;
+            }
+
+            const videoId = extractYouTubeId(query);
+            if (!videoId) {
+                showAlert('error', 'Invalid Link', 'The provided URL is not a valid YouTube link. Please check the URL format (e.g. youtube.com/watch?v=...)');
+                return;
+            }
+
+            hideAlert();
+            resultContainer.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+
+            try {
+                const oembedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+                
+                let data = null;
+                try {
+                    const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(oembedUrl)}`);
+                    if (response.ok) {
+                        const json = await response.json();
+                        data = JSON.parse(json.contents);
+                    }
+                } catch (err) {
+                    console.warn('Proxy fetch failed, attempting direct fetch...', err);
+                }
+
+                if (!data) {
+                    const directRes = await fetch(oembedUrl);
+                    if (directRes.ok) {
+                        data = await directRes.json();
+                    }
+                }
+
+                loadingState.classList.add('hidden');
+
+                if (!data || !data.title) {
+                    throw new Error('Could not retrieve video metadata.');
+                }
+
+                // Copyright detection simulation for major music labels / VEVO
+                const titleLower = data.title.toLowerCase();
+                const authorLower = (data.author_name || '').toLowerCase();
+                
+                const isRestricted = titleLower.includes('vevo') || 
+                                     titleLower.includes('official music video') || 
+                                     authorLower.includes('vevo') ||
+                                     authorLower.includes('sony music') || 
+                                     authorLower.includes('universal music');
+
+                if (isRestricted) {
+                    showAlert(
+                        'warning', 
+                        'Copyright Restricted Content', 
+                        `"${data.title}" by ${data.author_name} is protected by copyright regulations and major label licenses. Copyrighted videos are not available for download.`
+                    );
+                    return;
+                }
+
+                document.getElementById('videoTitle').textContent = data.title;
+                document.getElementById('channelName').textContent = data.author_name || 'YouTube Creator';
+                
+                const highResThumb = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                document.getElementById('videoThumb').src = highResThumb;
+                document.getElementById('videoThumb').onerror = function() {
+                    this.src = data.thumbnail_url || 'https://placehold.co/600x400/1e293b/ffffff?text=Video+Thumbnail';
+                };
+
+                resultContainer.classList.remove('hidden');
+                resultContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            } catch (error) {
+                loadingState.classList.add('hidden');
+                showAlert('error', 'Fetching Failed', 'Unable to fetch video details. Please verify the URL is correct and public.');
+            }
+        });
+
+        function showAlert(type, title, message) {
+            alertBox.classList.remove('hidden', 'bg-red-950/40', 'border-red-900/50', 'text-red-200', 'bg-amber-950/40', 'border-amber-900/50', 'text-amber-200');
+            
+            if (type === 'error') {
+                alertBox.classList.add('bg-red-950/40', 'border-red-900/50', 'text-red-200');
+                alertIcon.innerHTML = '<i class="fa-solid fa-circle-exclamation text-red-400"></i>';
+            } else {
+                alertBox.classList.add('bg-amber-950/40', 'border-amber-900/50', 'text-amber-200');
+                alertIcon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-400"></i>';
+            }
+            
+            alertTitle.textContent = title;
+            alertMessage.textContent = message;
+        }
+
+        function hideAlert() {
+            alertBox.classList.add('hidden');
+        }
+
+        function switchTab(type) {
+            const tabMp4 = document.getElementById('tabMp4');
+            const tabMp3 = document.getElementById('tabMp3');
+            const mp4Options = document.getElementById('mp4Options');
+            const mp3Options = document.getElementById('mp3Options');
+
+            if (type === 'mp4') {
+                tabMp4.className = "px-4 py-1.5 rounded-lg text-xs font-medium bg-accent text-white transition-all cursor-pointer";
+                tabMp3.className = "px-4 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all cursor-pointer";
+                mp4Options.classList.remove('hidden');
+                mp3Options.classList.add('hidden');
+                mp4Options.querySelector('.quality-card').click();
+            } else {
+                tabMp3.className = "px-4 py-1.5 rounded-lg text-xs font-medium bg-accent text-white transition-all cursor-pointer";
+                tabMp4.className = "px-4 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all cursor-pointer";
+                mp3Options.classList.remove('hidden');
+                mp4Options.classList.add('hidden');
+                mp3Options.querySelector('.quality-card').click();
+            }
+        }
+
+        function selectQuality(element, quality, format, size) {
+            const parent = element.parentElement;
+            parent.querySelectorAll('.quality-card').forEach(card => {
+                card.classList.remove('border-accent', 'bg-accent/5');
+            });
+            
+            element.classList.add('border-accent', 'bg-accent/5');
+            
+            currentSelection = { format, quality, size };
+            document.getElementById('selectedQualityBadge').textContent = `${quality} ${format}`;
+        }
+
+        function startDownload() {
+            const progressSection = document.getElementById('progressSection');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercentage = document.getElementById('progressPercentage');
+            const progressStatusText = document.getElementById('progressStatusText');
+            const startDownloadBtn = document.getElementById('startDownloadBtn');
+
+            progressSection.classList.remove('hidden');
+            startDownloadBtn.disabled = true;
+            startDownloadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            let progress = 0;
+            progressStatusText.textContent = `Converting stream to ${currentSelection.quality} ${currentSelection.format}...`;
+
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 15) + 5;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(interval);
+                    progressBar.style.width = '100%';
+                    progressPercentage.textContent = '100%';
+                    progressStatusText.innerHTML = '<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-check-circle"></i> File generated successfully (' + currentSelection.size + ')! Download initiated.</span>';
+                    
+                    setTimeout(() => {
+                        startDownloadBtn.disabled = false;
+                        startDownloadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        progressSection.classList.add('hidden');
+                        progressBar.style.width = '0%';
+                    }, 3000);
+                } else {
+                    progressBar.style.width = progress + '%';
+                    progressPercentage.textContent = progress + '%';
+                }
+            }, 200);
+        }
+    </script>
+</body>
+</html>  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Downloader Pro</title>
+    <!-- Tailwind CSS CDN -->
